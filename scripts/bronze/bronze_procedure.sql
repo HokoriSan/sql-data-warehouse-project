@@ -67,3 +67,5 @@ BEGIN
 		TABLOCK
 	);
 END
+
+EXEC bronze.load_bronze;

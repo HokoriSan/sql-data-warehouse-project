@@ -37,7 +37,6 @@ CREATE TABLE bronze.crm_cust_info (
     cst_gndr            NVARCHAR(50),
     cst_create_date     DATE
 );
-GO
 
 -- CRM: informasi produk
 IF OBJECT_ID('bronze.crm_prd_info', 'U') IS NOT NULL
@@ -51,7 +50,6 @@ CREATE TABLE bronze.crm_prd_info (
     prd_start_dt  DATETIME,
     prd_end_dt    DATETIME
 );
-GO
 
 -- CRM: detail penjualan
 -- CATATAN: kolom tanggal (sls_order_dt, sls_ship_dt, sls_due_dt) bertipe INT
@@ -71,7 +69,6 @@ CREATE TABLE bronze.crm_sales_details (
     sls_quantity  INT,
     sls_price     INT
 );
-GO
 
 -- ERP: data pelanggan (tanggal lahir, gender)
 IF OBJECT_ID('bronze.erp_cust_az12', 'U') IS NOT NULL
@@ -81,7 +78,6 @@ CREATE TABLE bronze.erp_cust_az12 (
     bdate  DATE,
     gen    NVARCHAR(50)
 );
-GO
 
 -- ERP: lokasi pelanggan (negara)
 IF OBJECT_ID('bronze.erp_loc_a101', 'U') IS NOT NULL
@@ -90,7 +86,6 @@ CREATE TABLE bronze.erp_loc_a101 (
     cid    NVARCHAR(50),
     cntry  NVARCHAR(50)
 );
-GO
 
 -- ERP: kategori produk
 IF OBJECT_ID('bronze.erp_px_cat_g1v2', 'U') IS NOT NULL
@@ -101,4 +96,3 @@ CREATE TABLE bronze.erp_px_cat_g1v2 (
     subcat       NVARCHAR(50),
     maintenance  NVARCHAR(50)
 );
-GO

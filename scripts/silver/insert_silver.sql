@@ -1,24 +1,3 @@
-/* ============================================================
-   SCRIPT   : silver.load_silver  (SQL Server / T-SQL)
-   TUJUAN   : Memuat data bronze -> silver (full load, 6 tabel).
-   POLA     : Setiap tabel = TRUNCATE lalu INSERT, semuanya dalam
-              satu transaksi. Jika ada error, semua di-rollback.
-   CARA PAKAI: EXEC silver.load_silver;
-
-   WARNING UMUM:
-     1. Full load: isi tabel silver diganti total setiap eksekusi.
-        Tidak cocok untuk load inkremental.
-     2. Tabel silver terkunci selama transaksi berjalan.
-     3. TRUNCATE gagal jika tabel direferensikan foreign key.
-     4. TRIM(karakter FROM kolom) butuh SQL Server 2017+.
-     5. Karakter pembersih: CHAR(9) tab, CHAR(10) line feed,
-        CHAR(13) carriage return, CHAR(32) spasi,
-        CHAR(160) non-breaking space.
-     6. Urutan load tidak masalah untuk script ini, tetapi
-        validasi relasi antar tabel hanya bermakna setelah
-        semua tabel terisi.
-   ============================================================ */
-
 CREATE OR ALTER PROCEDURE silver.load_silver
 AS
 BEGIN
@@ -53,10 +32,20 @@ BEGIN
 		     6. cst_key hanya tie-breaker agar hasil konsisten.
 		-------------------------------------------------------- */
 		SET @batch_set_time = GETDATE();
-		SET @set_time = GETDATE();
-		PRINT '>> Load silver.crm_cust_info';
-		TRUNCATE TABLE silver.crm_cust_info;
+		
+		 PRINT '=======================================';
+        PRINT 'Loading Silver Layer';
+        PRINT '=======================================';
 
+        PRINT '---------------------------------------';
+        PRINT 'Loading CRM Tables';
+        PRINT '---------------------------------------';
+        
+		SET @set_time = GETDATE();
+		PRINT '>> Truncating Table : silver.crm_cust_info';
+		TRUNCATE TABLE silver.crm_cust_info;
+		
+		 PRINT '>> Inserting Data Into : silver.crm_cust_info';
 		INSERT INTO silver.crm_cust_info (
 			cst_id,
 			cst_key,
@@ -94,6 +83,7 @@ BEGIN
 
 		SET @end_time = GETDATE();
 		PRINT '>> Load Duration : ' + CAST(DATEDIFF(second, @set_time, @end_time) AS NVARCHAR) + ' seconds';
+		PRINT '>> ---------------------------------------';
 
 		/* --------------------------------------------------------
 		   TABEL 2: silver.crm_prd_info
@@ -126,9 +116,10 @@ BEGIN
 		     6. Kode prd_line baru di bronze menjadi 'Unknown'.
 		   -------------------------------------------------------- */
 		SET @batch_set_time = GETDATE();
-		PRINT '>> Load silver.crm_prd_info';
+		PRINT '>> Truncating Table : silver.crm_prd_info';
 		TRUNCATE TABLE silver.crm_prd_info;
-
+		
+		PRINT '>> Inserting Data Into : silver.crm_prd_info';
 		INSERT INTO silver.crm_prd_info (
 			prd_id,
 			prd_cat_id,
@@ -161,6 +152,7 @@ BEGIN
 
 		SET @end_time = GETDATE();
 		PRINT '>> Load Duration : ' + CAST(DATEDIFF(second, @set_time, @end_time) AS NVARCHAR) + ' seconds';
+		PRINT '>> ---------------------------------------';
 		
 		/* --------------------------------------------------------
 		   TABEL 3: silver.crm_sales_details
@@ -189,9 +181,10 @@ BEGIN
 		        crm_cust_info.cst_id; cek lewat validasi relasi.
 		   -------------------------------------------------------- */
 		SET @set_time = GETDATE();
-		PRINT '>> Load silver.crm_sales_details';
+		PRINT '>> Truncating Table : silver.crm_sales_details';
 		TRUNCATE TABLE silver.crm_sales_details;
-
+		
+		PRINT '>> Inserting Data Into : silver.crm_sales_details';
 		INSERT INTO silver.crm_sales_details (
 			sls_ord_num,
 			sls_prd_key,
@@ -232,6 +225,7 @@ BEGIN
 
 		SET @end_time = GETDATE();
 		PRINT '>> Load Duration : ' + CAST(DATEDIFF(second, @set_time, @end_time) AS NVARCHAR) + ' seconds';
+		PRINT '>> ---------------------------------------';
 		
 		/* --------------------------------------------------------
 		   TABEL 4: silver.erp_cust_az12
@@ -252,10 +246,15 @@ BEGIN
 		     3. Duplikat cid belum ditangani.
 		     4. Kode gender lain (mis. bahasa lokal) menjadi 'Unknown'.
 		   -------------------------------------------------------- */
+		PRINT '---------------------------------------';
+        PRINT 'Loading ERP Tables';
+        PRINT '---------------------------------------';
+		
 		SET @end_time = GETDATE();		
-		PRINT '>> Load silver.erp_cust_az12';
+		PRINT '>> Truncating Table : silver.erp_cust_az12';
 		TRUNCATE TABLE silver.erp_cust_az12;
 
+		PRINT '>> Inserting Data Into : silver.erp_cust_az12';
 		INSERT INTO silver.erp_cust_az12 (
 			cid,
 			bdate,
@@ -276,6 +275,7 @@ BEGIN
 
 		SET @end_time = GETDATE();
 		PRINT '>> Load Duration : ' + CAST(DATEDIFF(second, @set_time, @end_time) AS NVARCHAR) + ' seconds';
+		PRINT '>> ---------------------------------------';
 		
 		/* --------------------------------------------------------
 		   TABEL 5: silver.erp_loc_a101
@@ -296,9 +296,10 @@ BEGIN
 		   -------------------------------------------------------- */
 		
 		SET @end_time = GETDATE();
-		PRINT '>> Load silver.erp_loc_a101';
+		PRINT '>> Truncating Table : silver.erp_loc_a101';
 		TRUNCATE TABLE silver.erp_loc_a101;
 
+		PRINT '>> Inserting Data Into : silver.erp_loc_a101';
 		INSERT INTO silver.erp_loc_a101 (
 			cid,
 			cntry
@@ -318,6 +319,7 @@ BEGIN
 
 		SET @end_time = GETDATE();
 		PRINT '>> Load Duration : ' + CAST(DATEDIFF(second, @set_time, @end_time) AS NVARCHAR) + ' seconds';
+		PRINT '>> ---------------------------------------';
 		
 		/* --------------------------------------------------------
 		   TABEL 6: silver.erp_px_cat_g1v2
@@ -335,9 +337,10 @@ BEGIN
 		     3. Duplikat id belum ditangani.
 		   -------------------------------------------------------- */
 		SET @end_time = GETDATE();		
-		PRINT '>> Load silver.erp_px_cat_g1v2';
+		PRINT '>> Truncating Table : silver.erp_px_cat_g1v2';
 		TRUNCATE TABLE silver.erp_px_cat_g1v2;
 
+		PRINT '>> Inserting Data Into: silver.erp_px_cat_g1v2';
 		INSERT INTO silver.erp_px_cat_g1v2 (
 			id,
 			cat,
@@ -353,21 +356,24 @@ BEGIN
 
 		SET @end_time = GETDATE();
 		PRINT '>> Load Duration : ' + CAST(DATEDIFF(second, @set_time, @end_time) AS NVARCHAR) + ' seconds';
+		PRINT '>> ---------------------------------------';
 			
 		COMMIT TRANSACTION;
 		SET @batch_end_time = GETDATE();
-		PRINT '>> Load silver selesai.';
+		PRINT '=======================================';
 		PRINT '  - Total Load Duration : ' + CAST(DATEDIFF(second, @batch_set_time, @batch_end_time) AS NVARCHAR) + ' seconds';
+		 PRINT '=======================================';
 	
 	END TRY
 	BEGIN CATCH
 		IF @@TRANCOUNT > 0
 			ROLLBACK TRANSACTION;
-
-		PRINT '>> Load silver GAGAL. Transaksi di-rollback.';
-		PRINT 'Error number  : ' + CAST(ERROR_NUMBER() AS VARCHAR(10));
+		PRINT '=======================================';
+		PRINT '>> ERROR OCCURRED DURING LOADING SILVER LAYER';
 		PRINT 'Error message : ' + ERROR_MESSAGE();
-		PRINT 'Error line    : ' + CAST(ERROR_LINE() AS VARCHAR(10));
+		PRINT 'Error number  : ' + CAST(ERROR_NUMBER() AS NVARCHAR);
+		PRINT 'Error state    : ' + CAST(ERROR_STATE() AS NVARCHAR);
+		 PRINT '=======================================';
 		THROW;
 	END CATCH;
 END;

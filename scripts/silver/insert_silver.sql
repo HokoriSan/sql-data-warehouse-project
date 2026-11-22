@@ -64,9 +64,3 @@ FROM bronze.crm_prd_info cpi ;
 
 SELECT *
 FROM silver.crm_prd_info cpi
-
-
-   -- 4. Nilai asli di bronze yang menjadi 'Unknown'
-   SELECT DISTINCT cst_marital_status, cst_gndr
-   FROM bronze.crm_cust_info;
-   ============================================================ */

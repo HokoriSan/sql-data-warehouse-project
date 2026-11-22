@@ -24,7 +24,7 @@ AS
 BEGIN
 	SET NOCOUNT ON;
 	SET XACT_ABORT ON;
-
+	DECLARE @set_time DATETIME, @end_time DATETIME, @batch_set_time DATETIME, @batch_end_time DATETIME;
 	BEGIN TRY
 		BEGIN TRANSACTION;
 
@@ -51,7 +51,9 @@ BEGIN
 		     5. NULL pada ORDER BY DESC berada di akhir (SQL Server),
 		        jadi tanggal NULL tidak akan terpilih sebagai terbaru.
 		     6. cst_key hanya tie-breaker agar hasil konsisten.
-		   -------------------------------------------------------- */
+		-------------------------------------------------------- */
+		SET @batch_set_time = GETDATE();
+		SET @set_time = GETDATE();
 		PRINT '>> Load silver.crm_cust_info';
 		TRUNCATE TABLE silver.crm_cust_info;
 
@@ -90,6 +92,9 @@ BEGIN
 		) t
 		WHERE t.flag_last = 1;
 
+		SET @end_time = GETDATE();
+		PRINT '>> Load Duration : ' + CAST(DATEDIFF(second, @set_time, @end_time) AS NVARCHAR) + ' seconds';
+
 		/* --------------------------------------------------------
 		   TABEL 2: silver.crm_prd_info
 		   SOURCE : bronze.crm_prd_info
@@ -120,6 +125,7 @@ BEGIN
 		        end_dt bisa NULL atau lebih kecil dari start_dt.
 		     6. Kode prd_line baru di bronze menjadi 'Unknown'.
 		   -------------------------------------------------------- */
+		SET @batch_set_time = GETDATE();
 		PRINT '>> Load silver.crm_prd_info';
 		TRUNCATE TABLE silver.crm_prd_info;
 
@@ -153,6 +159,9 @@ BEGIN
 			) - 1 AS DATE) AS prd_end_dt
 		FROM bronze.crm_prd_info cpi;
 
+		SET @end_time = GETDATE();
+		PRINT '>> Load Duration : ' + CAST(DATEDIFF(second, @set_time, @end_time) AS NVARCHAR) + ' seconds';
+		
 		/* --------------------------------------------------------
 		   TABEL 3: silver.crm_sales_details
 		   SOURCE : bronze.crm_sales_details
@@ -179,6 +188,7 @@ BEGIN
 		        (hasil SUBSTRING), dan sls_cust_id dengan
 		        crm_cust_info.cst_id; cek lewat validasi relasi.
 		   -------------------------------------------------------- */
+		SET @set_time = GETDATE();
 		PRINT '>> Load silver.crm_sales_details';
 		TRUNCATE TABLE silver.crm_sales_details;
 
@@ -220,6 +230,9 @@ BEGIN
 			END AS sls_price
 		FROM bronze.crm_sales_details csd;
 
+		SET @end_time = GETDATE();
+		PRINT '>> Load Duration : ' + CAST(DATEDIFF(second, @set_time, @end_time) AS NVARCHAR) + ' seconds';
+		
 		/* --------------------------------------------------------
 		   TABEL 4: silver.erp_cust_az12
 		   SOURCE : bronze.erp_cust_az12
@@ -239,6 +252,7 @@ BEGIN
 		     3. Duplikat cid belum ditangani.
 		     4. Kode gender lain (mis. bahasa lokal) menjadi 'Unknown'.
 		   -------------------------------------------------------- */
+		SET @end_time = GETDATE();		
 		PRINT '>> Load silver.erp_cust_az12';
 		TRUNCATE TABLE silver.erp_cust_az12;
 
@@ -260,6 +274,9 @@ BEGIN
 			END AS gen
 		FROM bronze.erp_cust_az12 eca;
 
+		SET @end_time = GETDATE();
+		PRINT '>> Load Duration : ' + CAST(DATEDIFF(second, @set_time, @end_time) AS NVARCHAR) + ' seconds';
+		
 		/* --------------------------------------------------------
 		   TABEL 5: silver.erp_loc_a101
 		   SOURCE : bronze.erp_loc_a101
@@ -277,6 +294,8 @@ BEGIN
 		        berubah, ubah di semua tempat.
 		     4. Duplikat cid belum ditangani.
 		   -------------------------------------------------------- */
+		
+		SET @end_time = GETDATE();
 		PRINT '>> Load silver.erp_loc_a101';
 		TRUNCATE TABLE silver.erp_loc_a101;
 
@@ -297,6 +316,9 @@ BEGIN
 			END AS cntry
 		FROM bronze.erp_loc_a101 ela;
 
+		SET @end_time = GETDATE();
+		PRINT '>> Load Duration : ' + CAST(DATEDIFF(second, @set_time, @end_time) AS NVARCHAR) + ' seconds';
+		
 		/* --------------------------------------------------------
 		   TABEL 6: silver.erp_px_cat_g1v2
 		   SOURCE : bronze.erp_px_cat_g1v2
@@ -312,6 +334,7 @@ BEGIN
 		        (format dengan underscore, mis. AC_BR).
 		     3. Duplikat id belum ditangani.
 		   -------------------------------------------------------- */
+		SET @end_time = GETDATE();		
 		PRINT '>> Load silver.erp_px_cat_g1v2';
 		TRUNCATE TABLE silver.erp_px_cat_g1v2;
 
@@ -328,8 +351,14 @@ BEGIN
 			epcgv.maintenance
 		FROM bronze.erp_px_cat_g1v2 epcgv;
 
+		SET @end_time = GETDATE();
+		PRINT '>> Load Duration : ' + CAST(DATEDIFF(second, @set_time, @end_time) AS NVARCHAR) + ' seconds';
+			
 		COMMIT TRANSACTION;
+		SET @batch_end_time = GETDATE();
 		PRINT '>> Load silver selesai.';
+		PRINT '  - Total Load Duration : ' + CAST(DATEDIFF(second, @batch_set_time, @batch_end_time) AS NVARCHAR) + ' seconds';
+	
 	END TRY
 	BEGIN CATCH
 		IF @@TRANCOUNT > 0
@@ -342,4 +371,5 @@ BEGIN
 		THROW;
 	END CATCH;
 END;
-GO
+
+EXEC silver.load_silver;

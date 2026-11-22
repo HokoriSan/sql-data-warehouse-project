@@ -1,42 +1,3 @@
-/* ============================================================
-   SCRIPT   : Load silver.crm_cust_info  (SQL Server / T-SQL)
-   SOURCE   : bronze.crm_cust_info
-   TUJUAN   : Membersihkan dan menstandarkan data customer CRM
-              sebelum masuk ke Silver Layer.
-
-   TRANSFORMASI:
-     1. Deduplikasi: ambil record terbaru per cst_id berdasarkan
-        cst_create_date (ROW_NUMBER, flag_last = 1).
-     2. Membuang record dengan cst_id NULL (tidak bisa diidentifikasi).
-     3. TRIM pada cst_firstname dan cst_lastname.
-     4. Standarisasi cst_marital_status: M -> Married, S -> Single.
-     5. Standarisasi cst_gndr: M -> Male, F -> Female.
-     6. Nilai lain (NULL, kosong, kode baru) menjadi 'Unknown'.
-
-   WARNING:
-     1. Script dimulai dengan TRUNCATE sehingga seluruh isi tabel
-        silver dihapus setiap kali dijalankan (full load).
-     2. Baris dengan cst_id NULL dibuang tanpa notifikasi. Pantau
-        jumlahnya lewat query validasi di bawah.
-     3. cst_key tidak di-TRIM. Spasi tersembunyi di sumber dapat
-        membuat join ke tabel lain gagal.
-     4. TRIM() hanya membuang spasi biasa, bukan tab/enter
-        (CHAR(9), CHAR(10), CHAR(13)). Perlu dicek jika bronze
-        berasal dari file CSV.
-     5. TRIM() membutuhkan SQL Server 2017+. Untuk versi lama
-        gunakan LTRIM(RTRIM(kolom)).
-     6. Di SQL Server, NULL pada ORDER BY DESC berada di urutan
-        akhir, jadi record dengan cst_create_date NULL tidak akan
-        terpilih sebagai yang terbaru.
-     7. cst_key dipakai sebagai tie-breaker bila ada cst_id dan
-        cst_create_date yang sama, supaya hasil deterministik.
-     8. SELECT * pada subquery rawan jika struktur tabel bronze
-        berubah. Sebutkan kolom secara eksplisit di versi produksi.
-     9. Kode di luar M/S (marital status) dan M/F (gender) menjadi
-        'Unknown'. Cek bronze secara berkala agar kode valid baru
-        tidak terlewat.
-   ============================================================ */
-
 TRUNCATE TABLE silver.crm_cust_info;
 
 INSERT INTO silver.crm_cust_info (
@@ -74,29 +35,36 @@ FROM (
 ) t
 WHERE t.flag_last = 1;
 
-/* ============================================================
-   VALIDASI SETELAH LOAD (jalankan terpisah)
-   ============================================================
+-- INSERTING DATA INTO crm_prd_info TABLE
+INSERT INTO silver.crm_prd_info (
+	prd_id,
+	prd_cat_id,
+	prd_key,
+	prd_nm,
+	prd_cost,
+	prd_line,
+	prd_start_dt,
+	prd_end_dt
+)
+SELECT
+	cpi.prd_id ,
+	REPLACE(SUBSTRING(cpi.prd_key , 1, 5), '-','_') AS prd_cat_id ,
+	SUBSTRING(cpi.prd_key, 7, LEN(cpi.prd_key)) AS prd_key ,
+	cpi.prd_nm ,
+	ISNULL(cpi.prd_cost,0) AS prd_cost ,
+	CASE UPPER(TRIM(cpi.prd_line))
+		WHEN 'R' THEN 'Road'
+		WHEN 'M' THEN 'Mountain'
+		WHEN 'S' THEN 'Other Sales'
+		WHEN 'T' THEN 'Touring'
+		ELSE 'Unknown' END AS prid_line,
+	CAST(cpi.prd_start_dt AS DATE) AS prd_start_dt,
+	CAST(LEAD(cpi.prd_start_dt) OVER (PARTITION BY cpi.prd_key ORDER BY cpi.prd_start_dt ASC)-1 AS DATE) AS prd_end_dt 
+FROM bronze.crm_prd_info cpi ;
 
-   -- 1. cst_id harus unik (hasil harus kosong)
-   SELECT cst_id, COUNT(*) AS jumlah
-   FROM silver.crm_cust_info
-   GROUP BY cst_id
-   HAVING COUNT(*) > 1;
+SELECT *
+FROM silver.crm_prd_info cpi
 
-   -- 2. Jumlah baris bronze yang dibuang karena cst_id NULL
-   SELECT COUNT(*) AS baris_tanpa_id
-   FROM bronze.crm_cust_info
-   WHERE cst_id IS NULL;
-
-   -- 3. Sebaran nilai 'Unknown'
-   SELECT cst_marital_status, COUNT(*) AS jumlah
-   FROM silver.crm_cust_info
-   GROUP BY cst_marital_status;
-
-   SELECT cst_gndr, COUNT(*) AS jumlah
-   FROM silver.crm_cust_info
-   GROUP BY cst_gndr;
 
    -- 4. Nilai asli di bronze yang menjadi 'Unknown'
    SELECT DISTINCT cst_marital_status, cst_gndr

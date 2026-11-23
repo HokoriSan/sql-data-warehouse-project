@@ -24,7 +24,6 @@ gold.dim_customers
 */
 IF OBJECT_ID('gold.dim_customers', 'V') IS NOT NULL
     DROP VIEW gold.dim_customers;
-GO
 
 CREATE VIEW gold.dim_customers AS
 SELECT
@@ -44,7 +43,6 @@ SELECT
 FROM silver.crm_cust_info cci
 LEFT JOIN silver.erp_cust_az12 eca ON eca.cid = cci.cst_key
 LEFT JOIN silver.erp_loc_a101 ela ON ela.cid = cci.cst_key;
-GO
 
 /*
 gold.dim_products
@@ -54,7 +52,6 @@ gold.dim_products
 */
 IF OBJECT_ID('gold.dim_products', 'V') IS NOT NULL
     DROP VIEW gold.dim_products;
-GO
 
 CREATE VIEW gold.dim_products AS
 SELECT
@@ -72,7 +69,6 @@ SELECT
 FROM silver.crm_prd_info cpi
 LEFT JOIN silver.erp_px_cat_g1v2 epcgv ON epcgv.id = cpi.prd_cat_id
 WHERE cpi.prd_end_dt IS NULL;
-GO
 
 /*
 gold.fact_sales
@@ -84,7 +80,6 @@ gold.fact_sales
 */
 IF OBJECT_ID('gold.fact_sales', 'V') IS NOT NULL
     DROP VIEW gold.fact_sales;
-GO
 
 CREATE VIEW gold.fact_sales AS
 SELECT
@@ -100,4 +95,3 @@ SELECT
 FROM silver.crm_sales_details csd
 LEFT JOIN gold.dim_customers dc ON dc.customer_id = csd.sls_cust_id
 LEFT JOIN gold.dim_products dp ON dp.product_number = csd.sls_prd_key;
-GO

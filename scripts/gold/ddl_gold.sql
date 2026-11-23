@@ -11,7 +11,6 @@ PERINGATAN UMUM:
   permanen di luar view.
 - Surrogate key pasti unik, jadi cek keunikan sebaiknya juga dilakukan pada
   customer_id dan product_number.
-- Tiap CREATE VIEW harus berada di batch sendiri (dipisah GO).
 ===============================================================================
 */
 

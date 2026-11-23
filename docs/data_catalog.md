@@ -25,7 +25,7 @@ Gold Layer adalah representasi data tingkat bisnis (*business-level*) yang disus
 | `last_name` | NVARCHAR(50) | Nama belakang atau nama keluarga pelanggan. |
 | `country` | NVARCHAR(50) | Negara tempat tinggal pelanggan (contoh: `'Australia'`). |
 | `marital_status` | NVARCHAR(50) | Status pernikahan pelanggan (contoh: `'Married'`, `'Single'`). |
-| `gender` | NVARCHAR(50) | Jenis kelamin pelanggan (contoh: `'Male'`, `'Female'`, `'n/a'`). |
+| `gender` | NVARCHAR(50) | Jenis kelamin pelanggan (contoh: `'Male'`, `'Female'`, `'Unknown'`). |
 | `birthdate` | DATE | Tanggal lahir pelanggan dengan format YYYY-MM-DD (contoh: `1971-10-06`). |
 | `create_date` | DATE | Tanggal record pelanggan dibuat di sistem. |
 

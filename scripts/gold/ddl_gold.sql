@@ -17,9 +17,6 @@ PERINGATAN UMUM:
 /*
 gold.dim_customers
 - Sumber utama CRM, dilengkapi ERP (tanggal lahir dan negara).
-- Gender: pakai CRM, jika 'Unkown' pakai ERP.
-- PERINGATAN: ejaan 'Unkown' harus sama dengan Silver Layer. Jika cid di ERP
-  ganda, satu pelanggan bisa muncul lebih dari satu baris.
 */
 IF OBJECT_ID('gold.dim_customers', 'V') IS NOT NULL
     DROP VIEW gold.dim_customers;
@@ -34,8 +31,8 @@ SELECT
     ela.cntry AS country,
     cci.cst_marital_status AS marital_status,
     CASE
-        WHEN cci.cst_gndr != 'Unkown' THEN cci.cst_gndr
-        ELSE COALESCE(eca.gen, 'Unkown')
+        WHEN cci.cst_gndr != 'Unknown' THEN cci.cst_gndr
+        ELSE COALESCE(eca.gen, 'Unknown')
     END AS gender,
     eca.bdate AS birth_date,
     cci.cst_create_date AS create_date

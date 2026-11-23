@@ -1,3 +1,24 @@
+/* ============================================================
+   SCRIPT   : silver.load_silver  (SQL Server / T-SQL)
+   TUJUAN   : Memuat data bronze -> silver (full load, 6 tabel).
+   POLA     : Setiap tabel = TRUNCATE lalu INSERT, semuanya dalam
+              satu transaksi. Jika ada error, semua di-rollback.
+   CARA PAKAI: EXEC silver.load_silver;
+
+   WARNING UMUM:
+     1. Full load: isi tabel silver diganti total setiap eksekusi.
+        Tidak cocok untuk load inkremental.
+     2. Tabel silver terkunci selama transaksi berjalan.
+     3. TRUNCATE gagal jika tabel direferensikan foreign key.
+     4. TRIM(karakter FROM kolom) butuh SQL Server 2017+.
+     5. Karakter pembersih: CHAR(9) tab, CHAR(10) line feed,
+        CHAR(13) carriage return, CHAR(32) spasi,
+        CHAR(160) non-breaking space.
+     6. Urutan load tidak masalah untuk script ini, tetapi
+        validasi relasi antar tabel hanya bermakna setelah
+        semua tabel terisi.
+   ============================================================ */
+
 CREATE OR ALTER PROCEDURE silver.load_silver
 AS
 BEGIN
